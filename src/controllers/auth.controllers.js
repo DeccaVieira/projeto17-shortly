@@ -17,7 +17,7 @@ const hashPassword = bcrypt.hashSync(password, 10);
 const user = await connectionDB.query(
   `INSERT INTO users (name, email, password) VALUES ($1,$2,$3)`,
   [name, email, hashPassword]);
-  return res.status(200).send("Cadastro feito com sucesso!")
+  return res.status(201).send("Cadastro feito com sucesso!")
 } catch (err) {
   return res.status(400).send(err.message);
 }
