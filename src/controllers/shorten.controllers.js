@@ -57,7 +57,22 @@ res.redirect(link)
 }
 
 async function DeleteShorten(req,res){
-  
+  const { token } = res.locals;
+  const { id } = req.params;
+  try {
+    const user = await connectionDB.query('SELECT * FROM sessions WHERE token = $1',[token]);
+    const userUrl = await connectionDB.query('SELECT * FROM urls WHERE "userId"= $1',[user.rows[0].userId])
+    console.log(user.rows[0].userId, "user");
+    console.log(userUrl.rows[0].userId, "userUrl");
+    if(userUrl.rows[0].userId !== user.rows[0].userId){
+       return res.sendStatus(409);
+   }
+    await connectionDB.query(`DELETE from urls WHERE id=$1`, [id]);
+    return res.sendStatus(204);
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+
 }
 
 export {PostShorten, GetShorten,RedirectShorten, DeleteShorten};
