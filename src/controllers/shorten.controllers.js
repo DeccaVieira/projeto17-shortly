@@ -30,9 +30,34 @@ async function GetShorten(req,res){
       res.sendStatus(404);
 
     }
-    return res.send(rows[0]);
+    return res.sendStatus(200);
   }catch (err) {
     res.sendStatus(err);
   }
 }
-export {PostShorten, GetShorten};
+
+async function RedirectShorten(req,res){
+  const {shortUrl} = req.params;
+
+  try{
+const {rows} = await connectionDB.query('SELECT * FROM urls WHERE "shortUrl" = $1',[shortUrl]);
+if (rows.length === 0) {
+ return res.sendStatus(404);
+}
+const link = rows[0].url
+  console.log(rows[0].url, "urll");
+res.redirect(link)
+
+
+
+
+  }  catch (err) {
+    res.sendStatus(err);
+  }
+}
+
+async function DeleteShorten(req,res){
+  
+}
+
+export {PostShorten, GetShorten,RedirectShorten, DeleteShorten};
