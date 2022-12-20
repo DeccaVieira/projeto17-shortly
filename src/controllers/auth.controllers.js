@@ -27,6 +27,7 @@ async function SingIn (req,res){
   const { email, password } = req.body;
   try{
     const userExists = await connectionDB.query("SELECT * FROM users WHERE email = $1",[email]);
+
     if(!userExists){
       return res.status(401).send("Usuário não cadastrado!");
     }
@@ -37,7 +38,7 @@ console.log(password, userExists.password);
       return res.status(401).send("Senha Incorreta!");
     }
     const token = uuidV4();
-    await connectionDB.query(`INSERT INTO sessions(token, "userId") VALUES ($1,$2)`,[token, userExists.id]);
+    await connectionDB.query(`INSERT INTO sessions(token, "userId") VALUES ($1,$2)`,[token, userExists.rows[0].id]);
 res.send({token, name:userExists.name})
   }catch (err) {
     console.log(err);
