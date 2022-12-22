@@ -14,7 +14,7 @@ if(password !== confirmPassword){
 }
 const hashPassword = bcrypt.hashSync(password, 10);
 
-const user = await connectionDB.query(
+await connectionDB.query(
   `INSERT INTO users (name, email, password) VALUES ($1,$2,$3)`,
   [name, email, hashPassword]);
   return res.status(201).send("Cadastro feito com sucesso!")
@@ -31,18 +31,19 @@ async function SingIn (req,res){
     if(!userExists){
       return res.status(401).send("Usuário não cadastrado!");
     }
-    console.log(userExists.rows[0].password,"teste");
+
     const passwordOk = bcrypt.compareSync(password, userExists.rows[0].password);
-console.log(password, userExists.password);
+
+
     if(!passwordOk){
-      return res.status(401).send("Senha Incorreta!");
+      return res.status(401).send("Usuário ou senha Incorreta!");
     }
     const token = uuidV4();
     await connectionDB.query(`INSERT INTO sessions(token, "userId") VALUES ($1,$2)`,[token, userExists.rows[0].id]);
-res.send({token, name:userExists.name})
+res.status(200).send({token, name:userExists.name})
   }catch (err) {
     console.log(err);
-    res.sendStatus(500);
+    res.sendStatus(422);
   }
 }
 

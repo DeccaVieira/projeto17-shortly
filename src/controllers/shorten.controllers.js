@@ -7,32 +7,34 @@ async function PostShorten(req,res){
   console.log(token);
   const { url } = req.body;
   const shortUrl = nanoid(6);
+  const visitCount = 0;
   console.log(shortUrl, "small");
 try{
   const user = await connectionDB.query('SELECT * FROM sessions WHERE token = $1',[token]);
   
- await connectionDB.query(`INSERT INTO urls("userId", url, "shortUrl") VALUES ($1,$2,$3)`,[user.rows[0].userId , url, shortUrl]);
+ await connectionDB.query(`INSERT INTO urls("userId", url, "shortUrl", "visitCount") VALUES ($1,$2,$3,$4)`,[user.rows[0].userId , url, shortUrl, visitCount]);
 
  const short = await connectionDB.query('SELECT * FROM urls WHERE "shortUrl"= $1',[shortUrl]);
  console.log(short.rows[0].shortUrl, "short");
-return res.status(201).send(`{"shortUrl": "${short.rows[0].shortUrl}"}`);
+ const redirectLink = short.rows[0].shortUrl;
+ 
+return res.status(201).send(`{"shortUrl": "${redirectLink}"}`);
 
 }catch (err) {
-    res.sendStatus(err);
+    res.sendStatus(422);
   }
 }
 
 async function GetShorten(req,res){
   const { id } = req.params;
   try{
-    const {rows} = await connectionDB.query('SELECT * FROM urls WHERE id = $1', [id]);
+    const {rows} = await connectionDB.query('SELECT id, "shortUrl", url FROM urls WHERE id = $1', [id]);
     if (rows.length === 0) {
-      res.sendStatus(404);
-
+     return res.status(404).send("Url não existe!");
     }
-    return res.sendStatus(200);
+    return res.status(200).send(rows);
   }catch (err) {
-    res.sendStatus(err);
+    res.sendStatus(404);
   }
 }
 
@@ -40,19 +42,19 @@ async function RedirectShorten(req,res){
   const {shortUrl} = req.params;
 
   try{
+await connectionDB.query('UPDATE urls SET "visitCount" = "visitCount"+1 WHERE "shortUrl" = $1',[shortUrl]);
+
 const {rows} = await connectionDB.query('SELECT * FROM urls WHERE "shortUrl" = $1',[shortUrl]);
+
 if (rows.length === 0) {
- return res.sendStatus(404);
+ return res.status(404).send("Url não existe!");
 }
+
+
 const link = rows[0].url
-  console.log(rows[0].url, "urll");
 res.redirect(link)
-
-
-
-
   }  catch (err) {
-    res.sendStatus(err);
+    res.status(err).send(err);
   }
 }
 

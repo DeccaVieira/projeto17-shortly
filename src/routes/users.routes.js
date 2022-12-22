@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { findUsers } from "../controllers/users.controller.js";
+import { validateToken } from "../midlewares/token.middleware.js";
+import {searchData} from "../controllers/users.controller.js"
 
 const userRouter = Router();
 
-userRouter.get("/users", findUsers);
+userRouter.get("/users/me", validateToken, searchData);
 
 export default userRouter;
