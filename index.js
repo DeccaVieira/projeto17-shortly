@@ -18,4 +18,5 @@ app.use(rankingRouter);
 
 const port = process.env.PORT;
 console.log(port);
+
 app.listen(port, () => console.log(`Server running in port ${port}`));

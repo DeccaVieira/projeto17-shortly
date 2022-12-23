@@ -40,35 +40,38 @@ async function SignUp(req, res) {
 
 async function SingIn(req, res) {
   const { email, password } = req.body;
+  console.log("aaaa");
   try {
     const userExists = await connectionDB.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
     );
-
+    console.log("bbbb");
     if (!userExists) {
       return res.status(401).send("Usuário não cadastrado!");
     }
-
+    console.log("cccc");
     const { error } = signInSchema.validate(req.body, { abortEarly: false });
     if (error) {
       const errors = error.details.map((detail) => detail.message);
       return res.status(422).send(errors);
     }
-
+    console.log("ddddd");
     const passwordOk = bcrypt.compareSync(
       password,
       userExists.rows[0].password
     );
-
+    console.log("eeeeee");
     if (!passwordOk) {
       return res.status(401).send("Usuário ou senha Incorreta!");
     }
+
     const token = uuidV4();
     await connectionDB.query(
       `INSERT INTO sessions(token, "userId") VALUES ($1,$2)`,
       [token, userExists.rows[0].id]
     );
+    console.log("fffff");
     res.status(200).send({ token, name: userExists.name });
   } catch (err) {
     console.log(err);
