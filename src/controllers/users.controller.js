@@ -26,9 +26,18 @@ async function searchData(req, res) {
     console.log("bbbbb");
     console.log(userUrls.rows[0]);
 
-    if (userUrls.rows.length === 0) {
-      return res.send(userUrls.rows[0]);
+    if (userUrls.rows[0] === undefined) {
+      const user = await connectionDB.query(`SELECT * FROM sessions WHERE token = $1`, [token]);
+      const emptyUrl = await connectionDB.query(`SELECT id, name ,"visitCount" FROM users WHERE id = $1
+    
+      `,
+      [user.rows[0].userId]
+    );
+
+      return res.send({ ...emptyUrl.rows[0], shortenedUrls: [] });
+      
     }
+
     const newArray = userUrls.rows[0]?.shortenedUrls.map((item) => {
       return {
         id: item.f1,
