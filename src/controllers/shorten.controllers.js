@@ -1,5 +1,6 @@
 import { connectionDB } from "../database/db.js";
 import { nanoid } from "nanoid";
+import shortenSchema from "../schemas/shortenSchemas.js"
 
 async function PostShorten(req, res) {
   const { token } = res.locals;
@@ -14,6 +15,17 @@ async function PostShorten(req, res) {
       "SELECT * FROM sessions WHERE token = $1",
       [token]
     );
+    const checkToken = await connectionDB.query("SELECT * from sessions WHERE token = $1 ",[token])
+
+    if (!token || checkToken.rows.length ===0) {
+      return res.sendStatus(401);
+    }
+    const { error } = shortenSchema.validate(req.body, { abortEarly: false });
+    if (error) {
+      const errors = error.details.map((detail) => detail.message);
+      return res.status(422).send(errors);
+    }
+
     console.log(user.rows[0].userId, "userteste");
     await connectionDB.query(
       'UPDATE users SET "linksCount" = "linksCount"+1 WHERE id = $1',
@@ -24,14 +36,7 @@ async function PostShorten(req, res) {
       [user.rows[0].userId, url, shortUrl, visitCount]
     );
 
-    const short = await connectionDB.query(
-      'SELECT * FROM urls WHERE "shortUrl"= $1',
-      [shortUrl]
-    );
-
-    const redirectLink = short.rows[0].shortUrl;
-
-    return res.status(201).send(`{"shortUrl": "${redirectLink}"}`);
+    return res.status(201).send({ shortUrl });
   } catch (err) {
     res.status(422).send(err);
   }
@@ -47,7 +52,7 @@ async function GetShorten(req, res) {
     if (rows.length === 0) {
       return res.status(404).send("Url não existe!");
     }
-    return res.status(200).send(rows);
+    return res.status(200).send(rows[0]);
   } catch (err) {
     res.sendStatus(404);
   }
@@ -55,34 +60,38 @@ async function GetShorten(req, res) {
 
 async function RedirectShorten(req, res) {
   const { shortUrl } = req.params;
-console.log(shortUrl, "short");
+  console.log(shortUrl, "short");
   try {
+    const { rows } = await connectionDB.query(
+      'SELECT * FROM urls WHERE "shortUrl" = $1',
+      [shortUrl]
+    );
+  
+      if (rows.length === 0) {
+        return res.status(404).send("Url não existe!");
+      }
+    //aumenta o visitCount daquele link
     await connectionDB.query(
       'UPDATE urls SET "visitCount" = "visitCount"+1 WHERE "shortUrl" = $1',
       [shortUrl]
     );
-
-    const user = await connectionDB.query('SELECT "userId" from urls WHERE "shortUrl"= $1',[shortUrl])
+    
+    const user = await connectionDB.query(
+      'SELECT "userId" from urls WHERE "shortUrl"= $1',
+      [shortUrl]
+    );
     console.log(user.rows[0].userId, "uss");
-
+    //pega o total de visitCounts
     const visits = await connectionDB.query(
       `SELECT SUM("visitCount") FROM urls WHERE "userId" = $1`,
       [user.rows[0].userId]
     );
-
+    //seta o total de visitCounts
     await connectionDB.query(
       `UPDATE users SET "visitCount" = $1 WHERE id = $2`,
       [visits.rows[0].sum, user.rows[0].userId]
     );
 
-    const { rows } = await connectionDB.query(
-      'SELECT * FROM urls WHERE "shortUrl" = $1',
-      [shortUrl]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).send("Url não existe!");
-    }
 
     const link = rows[0].url;
     return res.redirect(link);
@@ -99,33 +108,42 @@ async function DeleteShorten(req, res) {
       "SELECT * FROM sessions WHERE token = $1",
       [token]
     );
+ 
+    
+    const userLink = await connectionDB.query(
+      'SELECT "userId", "visitCount" from urls WHERE id= $1',
+      [id]
+      );
+      if(userLink.rows.length===0){
+        return res.sendStatus(404)
+      }
+      console.log(user.rows[0].userId,"user.rows");
+      console.log(user.rows[0].id,"userLink.rows");
+      if (userLink.rows[0].userId !== user.rows[0].userId) {
+        return res.sendStatus(401);
+      }
 
-    const userLink = await connectionDB.query('SELECT "userId" from urls WHERE id= $1',[id])
-    console.log(userLink.rows[0].userId, "uss");
-
+    //soma o total dos visitCounts do usuario
     const visits = await connectionDB.query(
-      `SELECT SUM("visitCount") FROM urls WHERE "userId" = $1`,
+      `SELECT SUM("visitCount") FROM users WHERE id = $1`,
       [userLink.rows[0].userId]
     );
 
+    const diff = visits.rows[0].sum - userLink.rows[0].visitCount;
+
+    console.log(visits.rows, "visits");
     await connectionDB.query(
       `UPDATE users SET "visitCount" = $1 WHERE id = $2`,
-      [visits.rows[0].sum, userLink.rows[0].userId]
+      [diff, userLink.rows[0].userId]
     );
 
     await connectionDB.query(
       'UPDATE users SET "linksCount" = "linksCount"-1 WHERE id = $1',
       [user.rows[0].userId]
     );
-    const userUrl = await connectionDB.query(
-      'SELECT * FROM urls WHERE "userId"= $1',
-      [user.rows[0].userId]
-    );
+
     console.log(user.rows[0].userId, "user");
-    console.log(userUrl.rows[0].userId, "userUrl");
-    if (userUrl.rows[0].userId !== user.rows[0].userId) {
-      return res.sendStatus(409);
-    }
+  
     await connectionDB.query(`DELETE from urls WHERE id=$1`, [id]);
     return res.sendStatus(204);
   } catch (error) {

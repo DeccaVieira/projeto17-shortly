@@ -8,6 +8,9 @@ console.log(token, "token");
       'SELECT "userId" FROM sessions WHERE token = $1',
       [token]
     );
+    if(userId.rows.length ===0){
+      return res.sendStatus(404);
+    }
     console.log(userId.rows[0].userId, "aaaaaaaa");
 
       const userUrls = await connectionDB.query(
