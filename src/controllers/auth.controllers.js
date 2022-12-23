@@ -4,7 +4,10 @@ import { v4 as uuidV4 } from "uuid";
 
 async function SignUp(req,res){
 const {name, email, password,confirmPassword} = req.body;
+const visitCount = 0;
+const linksCount = 0;
 try{
+  
   const userExists = await connectionDB.query('SELECT * FROM users WHERE email = $1', [email]);
 if(userExists.rows.length !== 0){
   return res.status(409).send({ message: "Usuário já cadastrado" });
@@ -14,9 +17,11 @@ if(password !== confirmPassword){
 }
 const hashPassword = bcrypt.hashSync(password, 10);
 
+
+
 await connectionDB.query(
-  `INSERT INTO users (name, email, password) VALUES ($1,$2,$3)`,
-  [name, email, hashPassword]);
+  `INSERT INTO users (name, email, password, "visitCount", "linksCount") VALUES ($1,$2,$3,$4,$5)`,
+  [name, email, hashPassword, visitCount, linksCount]);
   return res.status(201).send("Cadastro feito com sucesso!")
 } catch (err) {
   return res.status(400).send(err.message);

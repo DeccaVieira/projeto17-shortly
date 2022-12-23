@@ -6,4 +6,5 @@ const userRouter = Router();
 
 userRouter.get("/users/me", validateToken, searchData);
 
+
 export default userRouter;

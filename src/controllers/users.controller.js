@@ -1,29 +1,41 @@
 import { connectionDB } from "../database/db.js";
 
-async function searchData(req,res) {
+async function searchData(req, res) {
   const { token } = res.locals;
-  try{
-//     const userId = await connectionDB.query('SELECT "userId" FROM sessions WHERE token = $1',[token]);
-// console.log(userId.rows[0].userId, "UserIdU") 
-// const {rows} = await connectionDB.query('SELECT id, name FROM users WHERE ID = $1',[userId.rows[0].userId])
+console.log(token, "token");
+  try {
+    const userId = await connectionDB.query(
+      'SELECT "userId" FROM sessions WHERE token = $1',
+      [token]
+    );
+    console.log(userId.rows[0].userId, "aaaaaaaa");
 
-// const urls = await connectionDB.query('SELECT * FROM urls WHERE "userId" = $1', [userId.rows[0].userId]);
+    const visits = await connectionDB.query(
+      `SELECT SUM("visitCount") FROM urls WHERE "userId" = $1`,
+      [userId.rows[0].userId]
+    );
 
-
-const userUrls = await connectionDB.query(`SELECT users.id, users.name, json_agg(urls.*) as "shortenedUrls" FROM urls 
+    await connectionDB.query(
+      `UPDATE users SET "visitCount" = $1 WHERE id = $2`,
+      [visits.rows[0].sum, userId.rows[0].userId]
+    );
+  
+    const userUrls = await connectionDB.query(
+      `SELECT users.id, users.name ,users."visitCount" ,json_agg((urls.id, urls."shortUrl", urls.url, urls."visitCount")) as "shortenedUrls" FROM urls 
 JOIN users ON users.id =
 urls."userId" 
 JOIN sessions ON sessions."userId" = 
-users.id WHERE token = $1 
+users.id WHERE sessions.token = $1
 GROUP BY users.id
-`,[token]);
+`,
+      [token]
+    );
+  const newArray = userUrls.rows[0].shortenedUrls.map(item => {return {id: item.f1,ShortUrl:item.f2, url:item.f3, visitCount:item.f4}})
+    
 
-
-console.log(userUrls, "urls");
-
-return res.send(userUrls.rows);
-  }catch (err){
-    res.send(err.message)
-  }     
+    return res.send({...userUrls.rows[0], shortenedUrls:newArray});
+  } catch (err) {
+    res.send(err.message);
+  }
 }
-export {searchData}
+export { searchData };
