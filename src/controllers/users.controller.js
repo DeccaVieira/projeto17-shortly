@@ -23,6 +23,9 @@ GROUP BY users.id
 `,
       [token]
     );
+    if(userUrls.rows.length ===0){
+      return res.send(userUrls.rows[0])
+    }
   const newArray = userUrls.rows[0].shortenedUrls.map(item => {return {id: item.f1,ShortUrl:item.f2, url:item.f3, visitCount:item.f4}})
     
 

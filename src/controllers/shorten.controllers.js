@@ -96,7 +96,7 @@ async function RedirectShorten(req, res) {
     const link = rows[0].url;
     return res.redirect(link);
   } catch (err) {
-    res.status(404).send(err);
+    res.status(400).send(err);
   }
 }
 
