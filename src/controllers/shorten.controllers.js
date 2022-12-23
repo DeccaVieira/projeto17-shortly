@@ -4,12 +4,12 @@ import shortenSchema from "../schemas/shortenSchemas.js"
 
 async function PostShorten(req, res) {
   const { token } = res.locals;
-  console.log(token);
+
   const { url } = req.body;
   const shortUrl = nanoid(6);
   const visitCount = 0;
   const linksCount = 0;
-  console.log(shortUrl, "small");
+
   try {
     const user = await connectionDB.query(
       "SELECT * FROM sessions WHERE token = $1",
@@ -26,7 +26,7 @@ async function PostShorten(req, res) {
       return res.status(422).send(errors);
     }
 
-    console.log(user.rows[0].userId, "userteste");
+  
     await connectionDB.query(
       'UPDATE users SET "linksCount" = "linksCount"+1 WHERE id = $1',
       [user.rows[0].userId]
@@ -60,7 +60,7 @@ async function GetShorten(req, res) {
 
 async function RedirectShorten(req, res) {
   const { shortUrl } = req.params;
-  console.log(shortUrl, "short");
+
   try {
     const { rows } = await connectionDB.query(
       'SELECT * FROM urls WHERE "shortUrl" = $1',
@@ -80,7 +80,7 @@ async function RedirectShorten(req, res) {
       'SELECT "userId" from urls WHERE "shortUrl"= $1',
       [shortUrl]
     );
-    console.log(user.rows[0].userId, "uss");
+  
     //pega o total de visitCounts
     const visits = await connectionDB.query(
       `SELECT SUM("visitCount") FROM urls WHERE "userId" = $1`,
@@ -117,8 +117,7 @@ async function DeleteShorten(req, res) {
       if(userLink.rows.length===0){
         return res.sendStatus(404)
       }
-      console.log(user.rows[0].userId,"user.rows");
-      console.log(user.rows[0].id,"userLink.rows");
+  
       if (userLink.rows[0].userId !== user.rows[0].userId) {
         return res.sendStatus(401);
       }
@@ -131,7 +130,7 @@ async function DeleteShorten(req, res) {
 
     const diff = visits.rows[0].sum - userLink.rows[0].visitCount;
 
-    console.log(visits.rows, "visits");
+
     await connectionDB.query(
       `UPDATE users SET "visitCount" = $1 WHERE id = $2`,
       [diff, userLink.rows[0].userId]
@@ -142,7 +141,7 @@ async function DeleteShorten(req, res) {
       [user.rows[0].userId]
     );
 
-    console.log(user.rows[0].userId, "user");
+
   
     await connectionDB.query(`DELETE from urls WHERE id=$1`, [id]);
     return res.sendStatus(204);

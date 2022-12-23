@@ -2,7 +2,7 @@ import { connectionDB } from "../database/db.js";
 
 async function searchData(req, res) {
   const { token } = res.locals;
-console.log(token, "token");
+
   try {
     const userId = await connectionDB.query(
       'SELECT "userId" FROM sessions WHERE token = $1',
@@ -11,7 +11,7 @@ console.log(token, "token");
     if(userId.rows.length ===0){
       return res.sendStatus(404);
     }
-    console.log(userId.rows[0].userId, "aaaaaaaa");
+
 
       const userUrls = await connectionDB.query(
       `SELECT users.id, users.name ,users."visitCount" ,json_agg((urls.id, urls."shortUrl", urls.url, urls."visitCount")) as "shortenedUrls" FROM urls 
@@ -26,7 +26,7 @@ GROUP BY users.id
     if(userUrls.rows.length ===0){
       return res.send(userUrls.rows[0])
     }
-  const newArray = userUrls.rows[0].shortenedUrls.map(item => {return {id: item.f1,ShortUrl:item.f2, url:item.f3, visitCount:item.f4}})
+  const newArray = userUrls.rows[0]?.shortenedUrls.map(item => {return {id: item.f1,ShortUrl:item.f2, url:item.f3, visitCount:item.f4}})
     
 
     return res.send({...userUrls.rows[0], shortenedUrls:newArray});
