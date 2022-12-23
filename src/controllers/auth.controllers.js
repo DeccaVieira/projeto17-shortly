@@ -17,8 +17,6 @@ if(password !== confirmPassword){
 }
 const hashPassword = bcrypt.hashSync(password, 10);
 
-
-
 await connectionDB.query(
   `INSERT INTO users (name, email, password, "visitCount", "linksCount") VALUES ($1,$2,$3,$4,$5)`,
   [name, email, hashPassword, visitCount, linksCount]);

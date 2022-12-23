@@ -55,11 +55,24 @@ async function GetShorten(req, res) {
 
 async function RedirectShorten(req, res) {
   const { shortUrl } = req.params;
-
+console.log(shortUrl, "short");
   try {
     await connectionDB.query(
       'UPDATE urls SET "visitCount" = "visitCount"+1 WHERE "shortUrl" = $1',
       [shortUrl]
+    );
+
+    const user = await connectionDB.query('SELECT "userId" from urls WHERE "shortUrl"= $1',[shortUrl])
+    console.log(user.rows[0].userId, "uss");
+
+    const visits = await connectionDB.query(
+      `SELECT SUM("visitCount") FROM urls WHERE "userId" = $1`,
+      [user.rows[0].userId]
+    );
+
+    await connectionDB.query(
+      `UPDATE users SET "visitCount" = $1 WHERE id = $2`,
+      [visits.rows[0].sum, user.rows[0].userId]
     );
 
     const { rows } = await connectionDB.query(
@@ -86,6 +99,20 @@ async function DeleteShorten(req, res) {
       "SELECT * FROM sessions WHERE token = $1",
       [token]
     );
+
+    const userLink = await connectionDB.query('SELECT "userId" from urls WHERE id= $1',[id])
+    console.log(userLink.rows[0].userId, "uss");
+
+    const visits = await connectionDB.query(
+      `SELECT SUM("visitCount") FROM urls WHERE "userId" = $1`,
+      [userLink.rows[0].userId]
+    );
+
+    await connectionDB.query(
+      `UPDATE users SET "visitCount" = $1 WHERE id = $2`,
+      [visits.rows[0].sum, userLink.rows[0].userId]
+    );
+
     await connectionDB.query(
       'UPDATE users SET "linksCount" = "linksCount"-1 WHERE id = $1',
       [user.rows[0].userId]
